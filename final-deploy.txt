@@ -1,0 +1,72 @@
+# Criar os Clusters, GKE e Atlas MongoDB
+
+gcloud init
+gcloud components install gke-gcloud-auth-plugin
+gcloud auth application-default login
+gcloud config get-value project
+gcloud config set project PROJECT_ID
+
+terraform init
+terraform apply
+
+# Exemplo de connection string
+mongodb+srv://<mongodb_username>:<mongodb_password>@cloudcomputingcluster.ng2q6na.mongodb.net
+
+# Dados os outputs do terraform para, mongodb_connection_string, mongodb_username e mongodb_password
+# Adicionar: <mongodb_username>:<mongodb_password>@ á connection_string
+
+# Substituir a connection_string nos projetos:
+# CloudApi      -> Dockerfile   -> ENV 
+# CloudCronJob  -> Dockerfile   -> ENV
+# CloudStorage  -> Dockerfile   -> ENV
+
+# Build e push dos projetos
+# Exemplo:
+docker build -t sapasboss/Cloudapi .
+docker push sapasboss/cloudapi
+
+#######################################################################################################################################
+
+gcloud container clusters get-credentials <KUBERNETES_CLUSTER_NAME> --region <REGION> --project <PROJECT_ID>
+gcloud container clusters get-credentials cloudcomputingchatgke-gke --region us-central1 --project cloudcomputingchatgke
+
+#######################################################################################################################################
+
+# Deploy dos serviços no cluster GKE
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
+
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.0/cert-manager.yaml
+kubectl get pods -n cert-manager
+
+kubectl create secret generic cloudflare-api-key-secret --from-literal=api-key=JYBboLoqMGQs_qfvYqAnKKSM-76wYesx_IKDVUY1
+
+kubectl apply -f issuer.yaml
+
+kubectl apply -f certificate.yaml
+kubectl get certificate
+kubectl get certificate -n kubernetes-dashboard
+
+kubectl apply -f api-deployment.yaml
+kubectl apply -f websockets-deployment.yaml
+kubectl apply -f storage-deployment.yaml
+kubectl apply -f frontend-deployment.yaml
+kubectl apply -f cronjob-deployment.yaml
+kubectl get pods,service,cronjob
+
+kubectl apply -f ingress.yaml
+kubectl describe ingress
+kubectl get ingress
+
+# Trigger cronjob
+kubectl create job --from=cronjob/cloudcronjob <job-name>
+
+#######################################################################################################################################
+
+# Destruir recursos do cluster GKE:
+kubectl delete all --all --all-namespaces
+
+
+# Destruir as infraestruturas
+terraform plan -destroy
+terraform destroy

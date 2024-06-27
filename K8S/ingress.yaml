@@ -1,0 +1,57 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: chat-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+    nginx.ingress.kubernetes.io/upstream-hash-by: least_conn
+spec:
+  tls:
+  - hosts:
+    - cloudcomputingchat.pt
+    - api.cloudcomputingchat.pt
+    - storage.cloudcomputingchat.pt
+    secretName: cloudcomputingchat-ca-tsl
+  ingressClassName: nginx
+  rules:
+  - host: cloudcomputingchat.pt
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloudfrontend
+            port:
+              number: 80
+      - path: /socket.io
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: cloudwebsockets
+            port:
+              number: 80
+  - host: api.cloudcomputingchat.pt
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloudapi
+            port:
+              number: 80
+  - host: storage.cloudcomputingchat.pt
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cloudstorage
+            port:
+              number: 80
+  

@@ -1,0 +1,38 @@
+#Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudwebsockets-deployment
+  labels:
+    app: cloudwebsockets
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudwebsockets
+  template:
+    metadata:
+      labels:
+        app: cloudwebsockets
+    spec:
+      containers:
+      - name: cloudwebsockets
+        image: sapasboss/cloudwebsockets
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+        
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudwebsockets
+spec:
+  type: ClusterIP
+  selector:
+    app: cloudwebsockets
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3001
